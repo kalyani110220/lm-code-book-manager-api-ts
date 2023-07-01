@@ -2,6 +2,7 @@ import * as bookService from "../services/books";
 import request from "supertest";
 import { app } from "../app";
 import { Book } from "../models/book";
+import { BadRequestError } from  '../errors/BadRequestError';
 
 jest.mock("../services/books");
 
@@ -108,30 +109,50 @@ describe("GET /api/v1/books/{bookId} endpoint", () => {
 });
 
 describe("POST /api/v1/books endpoint", () => {
-	test("status code successfully 201 for saving a valid book", async () => {
-		// Act
-		const res = await request(app)
-			.post("/api/v1/books")
-			.send({ bookId: 3, title: "Fantastic Mr. Fox", author: "Roald Dahl" });
-
-		// Assert
-		expect(res.statusCode).toEqual(201);
+	test("status code 201 for saving a valid book", async () => {
+	  // Act
+	  const res = await request(app)
+		.post("/api/v1/books")
+		.send({ bookId: 3, title: "Fantastic Mr. Fox", author: "Roald Dahl" });
+  
+	  // Assert
+	  expect(res.statusCode).toEqual(201);
 	});
-
-	test("status code 400 when saving ill formatted JSON", async () => {
-		// Arrange - we can enforce throwing an exception by mocking the implementation
+  
+	test("status code 400 when saving ill-formatted JSON", async () => {
+		// Arrange - we can enforce throwing a BadRequestError by mocking the implementation
 		jest.spyOn(bookService, "saveBook").mockImplementation(() => {
-			throw new Error("Error saving book");
+		  throw new BadRequestError("Error saving book");
 		});
-
+	  
 		// Act
 		const res = await request(app)
-			.post("/api/v1/books")
-			.send({ title: "Fantastic Mr. Fox", author: "Roald Dahl" }); // No bookId
-
+		  .post("/api/v1/books")
+		  .send({ title: "Fantastic Mr. Fox", author: "Roald Dahl" }); // No bookId
+	  
 		// Assert
 		expect(res.statusCode).toEqual(400);
-	});describe('DELETE /api/v1/books/:bookId', () => {
+	  });
+	  
+  });
+describe("Update /api/v1/books endpoint", () => {
+  test("status code 204 when updating a book", async () => {
+	// Arrange
+	const bookId = 1;
+	const bookUpdateData = { title: "New Title", author: "New Author" };
+	jest.spyOn(bookService, "updateBook").mockImplementation(); // Mock the updateBook function
+  
+	// Act
+	const res = await request(app)
+	  .put(`/api/v1/books/${bookId}`)
+	  .send(bookUpdateData);
+  
+	// Assert
+	expect(res.statusCode).toEqual(204);
+  });
+});
+  
+	describe('DELETE /api/v1/books/:bookId', () => {
 		test('should delete a book and return 204 status code', async () => {
 		  // Arrange
 		  const bookId = 1;
@@ -159,6 +180,6 @@ describe("POST /api/v1/books endpoint", () => {
 		  expect(response.status).toBe(404);
 		  expect(response.body).toEqual({ message: 'Book not found' });
 		});
+
 	  });
-	});
 	  
